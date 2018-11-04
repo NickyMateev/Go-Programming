@@ -1,7 +1,7 @@
 package main
 
 type Editor interface {
-	Insert(position int, text string) Editor
+	Insert(position uint, text string) Editor
 	Delete(offset, length uint) Editor
 	Undo() Editor
 	Redo() Editor
@@ -10,8 +10,8 @@ type Editor interface {
 
 type piece struct {
 	origin bool
-	offset int
-	length int
+	offset uint
+	length uint
 }
 
 type PieceTable struct {
@@ -36,26 +36,26 @@ func NewEditor(text string) Editor {
 	editor.table = append(editor.table, piece{
 		origin: true,
 		offset: 0,
-		length: len(text),
+		length: uint(len(text)),
 	})
 
 	return &editor
 }
 
-func (editor *DefaultEditor) length() int {
-	length := 0
+func (editor *DefaultEditor) length() uint {
+	var length uint
 	for _, v := range editor.table {
 		length += v.length
 	}
 	return length
 }
 
-func (editor *DefaultEditor) Insert(position int, text string) Editor {
+func (editor *DefaultEditor) Insert(position uint, text string) Editor {
 	editor.addBuffer += text
 	newPiece := piece{
 		origin: false,
-		offset: len(editor.addBuffer) - len(text),
-		length: len(text),
+		offset: uint(len(editor.addBuffer) - len(text)),
+		length: uint(len(text)),
 	}
 
 	if position == 0 {
@@ -63,7 +63,7 @@ func (editor *DefaultEditor) Insert(position int, text string) Editor {
 	} else if position >= editor.length() {
 		editor.table = append(editor.table, newPiece)
 	} else {
-		curLength := 0
+		var curLength uint
 		for i, elem := range editor.table {
 			if (curLength + elem.length) < position {
 				curLength += elem.length
