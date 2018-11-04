@@ -86,7 +86,7 @@ func (editor *DefaultEditor) Insert(position int, text string) Editor {
 }
 
 func (editor *DefaultEditor) Delete(offset, length uint) Editor {
-	return nil
+	return editor
 }
 
 func (editor *DefaultEditor) Undo() Editor {

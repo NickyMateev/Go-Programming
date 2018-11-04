@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSample(t *testing.T) {
 	t.Run("origin", func(t *testing.T) {
@@ -16,6 +18,15 @@ func TestSample(t *testing.T) {
 	t.Run("append", func(t *testing.T) {
 		f := NewEditor("foobar")
 		compare(t, "foobarbaz", f.Insert(6, "baz").String())
+	})
+
+	t.Run("insert_append_front_append_back", func(t *testing.T) {
+		f := NewEditor("A large span of text")
+		f.Insert(16, "an English ")
+		f.Insert(2, "very ")
+		f.Insert(36, " message.")
+		f.Insert(0, "This is ")
+		compare(t, "This is A very large span of an English text message.", f.String())
 	})
 
 	t.Run("delete", func(t *testing.T) {
