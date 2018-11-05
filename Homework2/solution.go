@@ -22,6 +22,7 @@ type PieceTable struct {
 
 type DefaultEditor struct {
 	PieceTable
+	tableHistory [][]piece
 }
 
 func NewEditor(text string) Editor {
@@ -31,6 +32,7 @@ func NewEditor(text string) Editor {
 			addBuffer:    "",
 			table:        make([]piece, 0),
 		},
+		tableHistory: make([][]piece, 0),
 	}
 
 	editor.table = append(editor.table, piece{
@@ -39,6 +41,7 @@ func NewEditor(text string) Editor {
 		length: uint(len(text)),
 	})
 
+	editor.tableHistory = append(editor.tableHistory, editor.table)
 	return &editor
 }
 
@@ -50,7 +53,26 @@ func (editor *DefaultEditor) length() uint {
 	return length
 }
 
+// reallocateTable reallocates a new slice of pieces and copies all of the current elements onto it - needed for proper Undo and Redo
+func (editor *DefaultEditor) reallocateTable() {
+	temp := editor.table
+	editor.table = make([]piece, len(temp))
+	copy(editor.table, temp)
+}
+
+// discardUndoneHistory discards the saved undone history by reallocating a new slice of piece slices
+func (editor *DefaultEditor) discardUndoneHistory() {
+	if len(editor.tableHistory) < cap(editor.tableHistory) {
+		temp := editor.tableHistory
+		editor.tableHistory = make([][]piece, len(temp))
+		copy(editor.tableHistory, temp)
+	}
+}
+
 func (editor *DefaultEditor) Insert(position uint, text string) Editor {
+	editor.reallocateTable()
+	editor.discardUndoneHistory()
+
 	editor.addBuffer += text
 	newPiece := piece{
 		origin: false,
@@ -82,6 +104,7 @@ func (editor *DefaultEditor) Insert(position uint, text string) Editor {
 			break
 		}
 	}
+	editor.tableHistory = append(editor.tableHistory, editor.table)
 	return editor
 }
 
@@ -90,7 +113,12 @@ func (editor *DefaultEditor) Delete(offset, length uint) Editor {
 	if offset >= totalLength {
 		return editor
 	}
+	editor.reallocateTable()
+	editor.discardUndoneHistory()
 
+	if offset+length > totalLength {
+		length = totalLength - offset
+	}
 	startPieceIdx, endPieceIdx := editor.affectedPiecesFromDelete(offset, length)
 
 	var firstDeletionIdxInStartPiece = offset - editor.absoluteIdxOfPiece(startPieceIdx)
@@ -118,6 +146,7 @@ func (editor *DefaultEditor) Delete(offset, length uint) Editor {
 	}
 
 	editor.cleanupTable(startPieceIdx, endPieceIdx)
+	editor.tableHistory = append(editor.tableHistory, editor.table)
 	return editor
 }
 
@@ -173,10 +202,20 @@ func (editor *DefaultEditor) affectedPiecesFromDelete(offset, length uint) (uint
 }
 
 func (editor *DefaultEditor) Undo() Editor {
+	historyRecords := len(editor.tableHistory)
+	if historyRecords > 1 {
+		editor.tableHistory = editor.tableHistory[:historyRecords-1]
+		editor.table = editor.tableHistory[historyRecords-2]
+	}
 	return editor
 }
 
 func (editor *DefaultEditor) Redo() Editor {
+	historyRecords := len(editor.tableHistory)
+	if historyRecords < cap(editor.tableHistory) {
+		editor.tableHistory = editor.tableHistory[:historyRecords+1]
+		editor.table = editor.tableHistory[historyRecords]
+	}
 	return editor
 }
 
