@@ -86,15 +86,98 @@ func (editor *DefaultEditor) Insert(position uint, text string) Editor {
 }
 
 func (editor *DefaultEditor) Delete(offset, length uint) Editor {
+	totalLength := editor.length()
+	if offset >= totalLength {
+		return editor
+	}
+
+	startPieceIdx, endPieceIdx := editor.affectedPiecesFromDelete(offset, length)
+
+	var firstDeletionIdxInStartPiece = offset - editor.absoluteIdxOfPiece(startPieceIdx)
+	var lastDeletionIdxInEndPiece = length - (editor.absoluteIdxOfPiece(endPieceIdx) - offset) - 1
+
+	piecesAffected := (endPieceIdx - startPieceIdx) + 1
+	if piecesAffected > 1 {
+		editor.table[startPieceIdx].length = firstDeletionIdxInStartPiece
+		editor.table[endPieceIdx].offset += lastDeletionIdxInEndPiece + 1
+		editor.table[endPieceIdx].length -= lastDeletionIdxInEndPiece + 1
+	} else {
+		originalPieceLength := editor.table[startPieceIdx].length
+		editor.table[startPieceIdx].length = firstDeletionIdxInStartPiece
+
+		residuePieceLength := originalPieceLength - length - editor.table[startPieceIdx].length
+		if residuePieceLength > 0 {
+			residuePiece := editor.table[startPieceIdx]
+			residuePiece.offset += editor.table[startPieceIdx].length + length
+			residuePiece.length = residuePieceLength
+
+			editor.table = append(editor.table, piece{})
+			copy(editor.table[startPieceIdx+2:], editor.table[startPieceIdx+1:])
+			editor.table[startPieceIdx+1] = residuePiece
+		}
+	}
+
+	editor.cleanupTable(startPieceIdx, endPieceIdx)
 	return editor
 }
 
+// cleanupTable deletes all piece elements from the PieceTable which are within the range defined by startIdx and endIdx as well as the elements at the startIdx and endIdx in the cases where they have zero length
+func (editor *DefaultEditor) cleanupTable(startIdx, endIdx uint) {
+	indicesToDrop := make([]uint, 0)
+	for i := startIdx; i <= endIdx; i++ {
+		if (i != startIdx && i != endIdx) || editor.table[i].length < 1 {
+			indicesToDrop = append(indicesToDrop, i)
+		}
+	}
+	if len(indicesToDrop) > 0 {
+		lastIndexToDrop := indicesToDrop[len(indicesToDrop)-1]
+		editor.table = append(editor.table[:indicesToDrop[0]], editor.table[lastIndexToDrop+1:]...)
+	}
+}
+
+// absoluteIdxOfPiece returns the absolute index (in relation to the whole text in the Editor) of the first symbol of the piece at the specified index in the Piece Table
+func (editor *DefaultEditor) absoluteIdxOfPiece(pieceIdx uint) uint {
+	var absIdx, i uint
+	for ; i < pieceIdx; i++ {
+		absIdx += editor.table[i].length
+	}
+	return absIdx
+}
+
+// affectedPiecesFromDelete returns the indices of the first and last affected piece from the Piece Table as a result of the delete operation
+func (editor *DefaultEditor) affectedPiecesFromDelete(offset, length uint) (uint, uint) {
+	var absoluteIdxOfStartingPiece, startPieceIdx, endPieceIdx uint
+	for i, elem := range editor.table {
+		if (absoluteIdxOfStartingPiece + elem.length) < offset {
+			absoluteIdxOfStartingPiece += elem.length
+			continue
+		}
+		startPieceIdx = uint(i)
+		break
+	}
+
+	deleteSymbolsCounter := (absoluteIdxOfStartingPiece + editor.table[startPieceIdx].length) - offset
+	if deleteSymbolsCounter >= length {
+		return startPieceIdx, startPieceIdx
+	}
+
+	for i := startPieceIdx + 1; i < uint(len(editor.table)); i++ {
+		if deleteSymbolsCounter+editor.table[i].length < length {
+			deleteSymbolsCounter += editor.table[i].length
+			continue
+		}
+		endPieceIdx = uint(i)
+		break
+	}
+	return startPieceIdx, endPieceIdx
+}
+
 func (editor *DefaultEditor) Undo() Editor {
-	return nil
+	return editor
 }
 
 func (editor *DefaultEditor) Redo() Editor {
-	return nil
+	return editor
 }
 
 func (editor *DefaultEditor) String() string {
