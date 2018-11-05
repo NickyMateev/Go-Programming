@@ -65,6 +65,18 @@ func TestSample(t *testing.T) {
 		f.Delete(12, 27)
 		compare(t, "This is A ve text message.", f.String())
 	})
+
+	t.Run("undo", func(t *testing.T) {
+		f := NewEditor("A span of text")
+		f.Insert(10, "English ").Insert(0, "This is ").Undo()
+		compare(t, "A span of English text", f.String())
+	})
+
+	t.Run("redo", func(t *testing.T) {
+		f := NewEditor("A span of text")
+		f.Insert(10, "English ").Insert(0, "This is ").Undo().Undo().Redo()
+		compare(t, "A span of English text", f.String())
+	})
 }
 
 func compare(t *testing.T, exp, got string) {
