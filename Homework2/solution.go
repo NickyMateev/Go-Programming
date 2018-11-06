@@ -1,5 +1,7 @@
 package main
 
+import "bytes"
+
 type Editor interface {
 	// Insert text starting from given position.
 	Insert(position uint, text string) Editor
@@ -25,8 +27,8 @@ type piece struct {
 }
 
 type PieceTable struct {
-	originBuffer string
-	addBuffer    string
+	originBuffer *bytes.Buffer
+	addBuffer    *bytes.Buffer
 	table        []piece
 }
 
@@ -38,8 +40,8 @@ type DefaultEditor struct {
 func NewEditor(text string) Editor {
 	editor := DefaultEditor{
 		PieceTable: PieceTable{
-			originBuffer: text,
-			addBuffer:    "",
+			originBuffer: bytes.NewBufferString(text),
+			addBuffer:    bytes.NewBufferString(""),
 			table:        make([]piece, 0),
 		},
 		tableHistory: make([][]piece, 0),
@@ -83,10 +85,10 @@ func (editor *DefaultEditor) Insert(position uint, text string) Editor {
 	editor.reallocateTable()
 	editor.discardUndoneHistory()
 
-	editor.addBuffer += text
+	editor.addBuffer.WriteString(text)
 	newPiece := piece{
 		origin: false,
-		offset: uint(len(editor.addBuffer) - len(text)),
+		offset: uint((editor.addBuffer.Len()) - len(text)),
 		length: uint(len(text)),
 	}
 
@@ -230,15 +232,18 @@ func (editor *DefaultEditor) Redo() Editor {
 }
 
 func (editor *DefaultEditor) String() string {
-	result := ""
+	origin := editor.originBuffer.String()
+	add := editor.addBuffer.String()
+
+	var result bytes.Buffer
 	for _, v := range editor.table {
 		off := v.offset
 		length := v.length
 		if v.origin {
-			result += editor.originBuffer[off : off+length]
+			result.WriteString(origin[off : off+length])
 		} else {
-			result += editor.addBuffer[off : off+length]
+			result.WriteString(add[off : off+length])
 		}
 	}
-	return result
+	return result.String()
 }
