@@ -82,6 +82,10 @@ func (editor *DefaultEditor) discardUndoneHistory() {
 }
 
 func (editor *DefaultEditor) Insert(position uint, text string) Editor {
+	defer func() {
+		editor.tableHistory = append(editor.tableHistory, editor.table)
+	}()
+
 	editor.reallocateTable()
 	editor.discardUndoneHistory()
 
@@ -116,11 +120,14 @@ func (editor *DefaultEditor) Insert(position uint, text string) Editor {
 			break
 		}
 	}
-	editor.tableHistory = append(editor.tableHistory, editor.table)
 	return editor
 }
 
 func (editor *DefaultEditor) Delete(offset, length uint) Editor {
+	defer func() {
+		editor.tableHistory = append(editor.tableHistory, editor.table)
+	}()
+
 	totalLength := editor.length()
 	if offset >= totalLength {
 		return editor
@@ -132,6 +139,7 @@ func (editor *DefaultEditor) Delete(offset, length uint) Editor {
 		length = totalLength - offset
 	}
 	startPieceIdx, endPieceIdx := editor.affectedPiecesFromDelete(offset, length)
+	defer editor.cleanupTable(startPieceIdx, endPieceIdx)
 
 	var firstDeletionIdxInStartPiece = offset - editor.absoluteIdxOfPiece(startPieceIdx)
 	var lastDeletionIdxInEndPiece = length - (editor.absoluteIdxOfPiece(endPieceIdx) - offset) - 1
@@ -156,9 +164,6 @@ func (editor *DefaultEditor) Delete(offset, length uint) Editor {
 			editor.table[startPieceIdx+1] = residuePiece
 		}
 	}
-
-	editor.cleanupTable(startPieceIdx, endPieceIdx)
-	editor.tableHistory = append(editor.tableHistory, editor.table)
 	return editor
 }
 
