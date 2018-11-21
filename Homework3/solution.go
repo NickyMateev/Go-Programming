@@ -44,7 +44,7 @@ func NewSphere(origin geom.Vector, r float64) Sphere {
 }
 
 func (triangle Triangle) Intersect(ray geom.Ray) bool {
-	// Find vectors for two edges sharing vertex 0
+	// Find vectors for two edges sharing the first vertex
 	edge1 := geom.Sub(triangle.b, triangle.a)
 	edge2 := geom.Sub(triangle.c, triangle.a)
 
@@ -85,9 +85,20 @@ func (triangle Triangle) Intersect(ray geom.Ray) bool {
 }
 
 func (quad Quad) Intersect(ray geom.Ray) bool {
-	return true
+	firstTriangle := Triangle{a: quad.a, b: quad.b, c: quad.c}
+	secondTriangle := Triangle{a: quad.a, b: quad.c, c: quad.d}
+
+	return firstTriangle.Intersect(ray) || secondTriangle.Intersect(ray)
 }
 
 func (sphere Sphere) Intersect(ray geom.Ray) bool {
+	L := geom.Sub(sphere.origin, ray.Origin)
+	tc := geom.Dot(L, ray.Direction)
+
+	d := geom.Dot(L, L) - (tc * tc)
+	if d > sphere.r {
+		return false
+	}
+
 	return true
 }
