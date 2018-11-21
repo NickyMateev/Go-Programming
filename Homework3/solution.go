@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-const Episilon = 1e-7
+const epsilon = 1e-7
 
 type Triangle struct {
 	a, b, c geom.Vector
@@ -53,7 +53,7 @@ func (triangle Triangle) Intersect(ray geom.Ray) bool {
 	h := geom.Cross(ray.Direction, edge2)
 
 	det := geom.Dot(edge1, h)
-	if det > -Episilon && det < Episilon {
+	if det > -epsilon && det < epsilon {
 		return false // The ray is parallel to triangle plane, impossible that they intersect
 	}
 
@@ -78,7 +78,7 @@ func (triangle Triangle) Intersect(ray geom.Ray) bool {
 
 	// Calculating t - final check to see if ray intersects triangle
 	t := f * geom.Dot(edge2, q)
-	if t > Episilon {
+	if t > epsilon {
 		return true
 	}
 
