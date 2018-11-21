@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/fmi/go-homework/geom"
+	"sync"
 )
 
 const Episilon = 1e-7
@@ -85,10 +86,57 @@ func (triangle Triangle) Intersect(ray geom.Ray) bool {
 }
 
 func (quad Quad) Intersect(ray geom.Ray) bool {
-	firstTriangle := Triangle{a: quad.a, b: quad.b, c: quad.c}
-	secondTriangle := Triangle{a: quad.a, b: quad.c, c: quad.d}
+	var firstTriangle, secondTriangle Triangle
+	if quad.isConvex() {
+		firstTriangle = Triangle{a: quad.a, b: quad.c, c: quad.b}
+		secondTriangle = Triangle{a: quad.a, b: quad.c, c: quad.d}
+	} else {
+		firstTriangle = Triangle{a: quad.b, b: quad.d, c: quad.a}
+		secondTriangle = Triangle{a: quad.b, b: quad.d, c: quad.c}
+	}
 
-	return firstTriangle.Intersect(ray) || secondTriangle.Intersect(ray)
+	var wg sync.WaitGroup
+	var mutex sync.Mutex
+	var foundIntersection bool
+
+	checkIntersection := func(triangle *Triangle) {
+		defer wg.Done()
+		result := triangle.Intersect(ray)
+		mutex.Lock()
+		foundIntersection = foundIntersection || result
+		mutex.Unlock()
+	}
+
+	wg.Add(2)
+	go checkIntersection(&firstTriangle)
+	go checkIntersection(&secondTriangle)
+	wg.Wait()
+
+	return foundIntersection
+}
+
+func (quad Quad) isConvex() bool {
+	var sign bool
+	vertices := []geom.Vector{quad.a, quad.b, quad.c, quad.d}
+	n := len(vertices)
+
+	for i := 0; i < n; i++ {
+		dx1 := vertices[(i+2)%n].X - vertices[(i+1)%n].X
+		dy1 := vertices[(i+2)%n].Y - vertices[(i+1)%n].Y
+
+		dx2 := vertices[i].X - vertices[(i+1)%n].X
+		dy2 := vertices[i].Y - vertices[(i+1)%n].Y
+
+		zcross := dx1*dy2 - dy1*dx2
+
+		if i == 0 {
+			sign = zcross > 0
+		} else if sign != (zcross > 0) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (sphere Sphere) Intersect(ray geom.Ray) bool {

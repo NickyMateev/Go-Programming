@@ -23,21 +23,33 @@ func TestSampleSimpleSphere(t *testing.T) {
 
 	origin, r := geom.NewVector(0, 0, 0), 2.0
 	prim = NewSphere(origin, r)
-	ray := geom.NewRay(geom.NewVector(0, 0, 2.5), geom.NewVector(0, 0, 0))
+	ray := geom.NewRay(geom.NewVector(0, 0, 2.5), geom.NewVector(0, 0, 1))
 
 	if !prim.Intersect(ray) {
 		t.Errorf("Expected ray %#v to intersect sphere %#v but it did not.", ray, prim)
 	}
 }
 
-func TestSampleSimpleQuad(t *testing.T) {
+func TestSampleSimpleQuadConvex(t *testing.T) {
 	var prim geom.Intersectable
 
 	a, b, c, d := geom.NewVector(0, -2, 0), geom.NewVector(3, 0, 0), geom.NewVector(0, 1, 0), geom.Vector{-1, 0, 0}
 	prim = NewQuad(a, b, c, d)
-	ray := geom.Ray{geom.NewVector(0, 0, 2), geom.NewVector(0, 0, -1)}
+	ray := geom.NewRay(geom.NewVector(0, 0, 2), geom.NewVector(0, 0, -1))
 
 	if !prim.Intersect(ray) {
+		t.Errorf("Expected ray %#v to intersect quad %#v but it did not.", ray, prim)
+	}
+}
+
+func TestSampleSimpleQuadConcaveShouldNotIntersect(t *testing.T) {
+	var prim geom.Intersectable
+
+	a, b, c, d := geom.NewVector(0, -2, 0), geom.NewVector(3, 0, 0), geom.NewVector(0, 1, 0), geom.Vector{1, 0, 0}
+	prim = NewQuad(a, b, c, d)
+	ray := geom.NewRay(geom.NewVector(0, 0, 2), geom.NewVector(0, 0, -1))
+
+	if prim.Intersect(ray) {
 		t.Errorf("Expected ray %#v to intersect quad %#v but it did not.", ray, prim)
 	}
 }
