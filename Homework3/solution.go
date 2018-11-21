@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/fmi/go-homework/geom"
+	"math"
 	"sync"
 )
 
@@ -148,5 +149,33 @@ func (sphere Sphere) Intersect(ray geom.Ray) bool {
 
 	discriminant := b*b - 4*a*c
 
-	return discriminant > 0
+	if discriminant < 0 {
+		return false
+	}
+
+	x1, x2 := solveQuadraticEquation(a, b, c, discriminant)
+
+	if x1 < 0 && x2 < 0 {
+		return false
+	}
+
+	return true
+}
+
+func solveQuadraticEquation(a, b, c, discriminant float64) (float64, float64) {
+	if discriminant == 0 {
+		x := -0.5 * b / a
+		return x, x
+	} else {
+		var q float64
+		if b > 0 {
+			q = -0.5 * (b + math.Sqrt(discriminant))
+		} else {
+			q = -0.5 * (b - math.Sqrt(discriminant))
+		}
+
+		x1 := q / a
+		x2 := c / q
+		return x1, x2
+	}
 }
