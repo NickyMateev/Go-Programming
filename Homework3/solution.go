@@ -88,6 +88,8 @@ func (triangle Triangle) Intersect(ray geom.Ray) bool {
 
 func (quad Quad) Intersect(ray geom.Ray) bool {
 	var firstTriangle, secondTriangle Triangle
+
+	// Determining how to split the polygon
 	if quad.isConvex() {
 		firstTriangle = Triangle{a: quad.a, b: quad.c, c: quad.b}
 		secondTriangle = Triangle{a: quad.a, b: quad.c, c: quad.d}
