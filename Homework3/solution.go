@@ -140,13 +140,13 @@ func (quad Quad) isConvex() bool {
 }
 
 func (sphere Sphere) Intersect(ray geom.Ray) bool {
-	L := geom.Sub(sphere.origin, ray.Origin)
-	tc := geom.Dot(L, ray.Direction)
+	oc := geom.Sub(ray.Origin, sphere.origin)
 
-	d := geom.Dot(L, L) - (tc * tc)
-	if d > sphere.r {
-		return false
-	}
+	a := geom.Dot(ray.Direction, ray.Direction)
+	b := 2.0 * geom.Dot(oc, ray.Direction)
+	c := geom.Dot(oc, oc) - (sphere.r * sphere.r)
 
-	return true
+	discriminant := b*b - 4*a*c
+
+	return discriminant > 0
 }

@@ -66,6 +66,30 @@ func TestSampleSimpleQuadConcaveShouldNotIntersect(t *testing.T) {
 	}
 }
 
+func TestRayInsideTriangle(t *testing.T) {
+	var prim geom.Intersectable
+
+	a, b, c := geom.NewVector(-1, -1, 0), geom.NewVector(1, -1, 0), geom.NewVector(0, 1, 0)
+	prim = NewTriangle(a, b, c)
+	ray := geom.NewRay(geom.NewVector(-2, -2, 0), geom.NewVector(0, 0, 0))
+
+	if prim.Intersect(ray) {
+		t.Errorf("Expected ray %#v to be inside the triangle %#v to be parallel.", ray, prim)
+	}
+}
+
+func TestRayParallelToTheTriangle(t *testing.T) {
+	var prim geom.Intersectable
+
+	a, b, c := geom.NewVector(-1, -1, 0), geom.NewVector(1, -1, 0), geom.NewVector(0, 1, 0)
+	prim = NewTriangle(a, b, c)
+	ray := geom.NewRay(geom.NewVector(-2, -2, 1), geom.NewVector(0, 0, 1))
+
+	if prim.Intersect(ray) {
+		t.Errorf("Expected ray %#v to be parallel to the triangle %#v.", ray, prim)
+	}
+}
+
 func TestSampleIntersectableImplementations(t *testing.T) {
 	var prim geom.Intersectable
 
